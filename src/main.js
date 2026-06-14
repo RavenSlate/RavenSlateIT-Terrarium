@@ -217,14 +217,19 @@ ipcMain.handle('start-app', async (event, { projectPath, entryPoint, runMode, ve
   // Port detection regex — covers :8000, localhost:5000, 127.0.0.1:8501, etc.
   const portRegex = /(?:localhost|127\.0\.0\.1|0\.0\.0\.0)?:(\d{4,5})(?:[/\s"']|$)/
 
+  const portSent = { sent: false }
+
   const handleOutput = (type) => (data) => {
     const text = data.toString()
     send('app-log', { projectPath, type, text })
 
-    // Only send the first port we find
-    const m = text.match(portRegex)
-    if (m) {
-      send('app-port', { projectPath, port: m[1] })
+    // Only send the first port we detect
+    if (!portSent.sent) {
+      const m = text.match(portRegex)
+      if (m) {
+        portSent.sent = true
+        send('app-port', { projectPath, port: m[1] })
+      }
     }
   }
 
@@ -375,7 +380,9 @@ ipcMain.handle('git-status', async (event, { projectPath }) => {
       ...status.deleted.map(f   => ({ path: f,    status: 'D' })),
       ...status.not_added.map(f => ({ path: f,    status: '?' })),
       ...status.renamed.map(r   => ({ path: r.to, status: 'R' })),
-      ...status.staged.filter(f => !status.modified.includes(f) && !status.created.includes(f)).map(f => ({ path: f, status: 'S' })),
+      ...status.staged.filter(f =>
+        !status.modified.includes(f) && !status.created.includes(f)
+      ).map(f => ({ path: f, status: 'S' })),
     ]
 
     const commits = (log.all || []).map(c => ({
