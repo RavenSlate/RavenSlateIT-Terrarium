@@ -226,7 +226,6 @@ function renderRunState(p) {
       portBadge.style.display = 'flex'
       portLabel.textContent = `Port :${app.port}`
       $('btn-open-browser').onclick = () => {
-        require && require('electron') // noop; use terrarium API not available here
         window.open(`http://localhost:${app.port}`)
       }
     }
@@ -459,10 +458,11 @@ async function loadGit(p) {
 
   const commitList = $('commit-list')
   commitList.innerHTML = ''
-  if (!data.recentCommits || data.recentCommits.length === 0) {
+  const recentCommits = data.commits || data.recentCommits || []
+  if (recentCommits.length === 0) {
     commitList.innerHTML = '<span class="text-muted text-sm">No commits found.</span>'
   } else {
-    for (const c of data.recentCommits) {
+    for (const c of recentCommits) {
       const el = document.createElement('div')
       el.className = 'commit-item'
       el.innerHTML = `
