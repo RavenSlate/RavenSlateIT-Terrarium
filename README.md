@@ -18,4 +18,4 @@ npm start
 - Python 3 — `brew install python`
 - Git for Git features
 
-RavenSlate IT © 2025
+RavenSlate IT © 2026
