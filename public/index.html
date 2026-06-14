@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terrarium — RavenSlate IT</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --sidebar:   #111827;
+      --card:      #1a2332;
+      --green:     #22c55e;
+      --green-dim: #16a34a;
+      --blue:      #3b82f6;
+      --blue-dim:  #2563eb;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --border:    #1e293b;
+      --red:       #ef4444;
+      --amber:     #f59e0b;
+      --log-bg:    #0a0f1a;
+      --log-green: #4ade80;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; overflow: hidden; }
+
+    /* ── Layout ── */
+    #app { display: flex; height: 100vh; }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: 260px;
+      min-width: 260px;
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    #sidebar-header {
+      padding: 44px 16px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    #logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+    #logo span.icon { font-size: 22px; }
+    #logo span.brand { color: var(--green); }
+
+    #search-box {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 10px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+    }
+    #search-box::placeholder { color: var(--muted); }
+    #search-box:focus { border-color: var(--blue); }
+
+    #project-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 8px;
+    }
+    #project-list::-webkit-scrollbar { width: 4px; }
+    #project-list::-webkit-scrollbar-track { background: transparent; }
+    #project-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .project-card {
+      padding: 10px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-bottom: 4px;
+      border: 1px solid transparent;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .project-card:hover { background: var(--card); }
+    .project-card.active { background: var(--card); border-color: var(--green); }
+
+    .project-card-header { display: flex; align-items: center; justify-content: space-between; }
+    .project-card-name { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+    .project-card-badges { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+    .running-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .project-card-py {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .badge {
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-weight: 500;
+    }
+    .badge-green  { background: rgba(34,197,94,0.15);  color: var(--green); }
+    .badge-blue   { background: rgba(59,130,246,0.15); color: var(--blue); }
+    .badge-muted  { background: rgba(100,116,139,0.12); color: var(--muted); }
+    .badge-amber  { background: rgba(245,158,11,0.15); color: var(--amber); }
+    .badge-red    { background: rgba(239,68,68,0.15);  color: var(--red); }
+
+    #sidebar-footer {
+      padding: 10px 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background 0.15s, opacity 0.15s;
+      outline: none;
+    }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-green  { background: var(--green); color: #000; }
+    .btn-green:hover:not(:disabled)  { background: #16a34a; }
+    .btn-red    { background: var(--red);   color: #fff; }
+    .btn-red:hover:not(:disabled)    { background: #dc2626; }
+    .btn-blue   { background: var(--blue);  color: #fff; }
+    .btn-blue:hover:not(:disabled)   { background: var(--blue-dim); }
+    .btn-ghost  { background: var(--card);  color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover:not(:disabled)  { background: #1e2d42; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+    .btn-full { width: 100%; }
+
+    /* ── Main panel ── */
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      color: var(--muted);
+    }
+    #empty-state .big-icon { font-size: 64px; opacity: 0.3; }
+    #empty-state h2 { font-size: 20px; font-weight: 600; color: var(--text); }
+    #empty-state p  { font-size: 13px; max-width: 320px; text-align: center; line-height: 1.6; }
+
+    /* ── Tabs ── */
+    #project-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    #tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+      padding-top: 44px;
+      background: var(--bg);
+      flex-shrink: 0;
+    }
+    .tab-btn {
+      padding: 10px 16px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: -1px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--green); border-bottom-color: var(--green); }
+
+    .tab-panel { display: none; flex: 1; overflow-y: auto; padding: 24px; }
+    .tab-panel.active { display: flex; flex-direction: column; gap: 18px; }
+    .tab-panel::-webkit-scrollbar { width: 5px; }
+    .tab-panel::-webkit-scrollbar-track { background: transparent; }
+    .tab-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ── Cards / sections ── */
+    .section-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+    }
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    /* ── Project header ── */
+    #proj-header { display: flex; align-items: flex-start; justify-content: space-between; }
+    #proj-name   { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+    #proj-path   { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    #proj-badges { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+    #proj-actions { display: flex; gap: 8px; flex-shrink: 0; margin-left: 12px; }
+
+    /* ── Venv / run controls ── */
+    .form-row   { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 140px; }
+    .form-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    select, input[type="text"] {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+      width: 100%;
+    }
+    select:focus, input[type="text"]:focus { border-color: var(--blue); }
+
+    /* ── Run button area ── */
+    #run-area { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    #run-btn  { min-width: 120px; padding: 10px 24px; font-size: 15px; border-radius: 10px; }
+    #status-badge { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; }
+    #uptime-display { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+    #port-badge { display: flex; align-items: center; gap: 8px; }
+
+    /* ── Logs ── */
+    #log-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-shrink: 0; }
+    #log-toolbar-left { display: flex; align-items: center; gap: 10px; }
+    #log-panel {
+      flex: 1;
+      background: var(--log-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      min-height: 300px;
+    }
+    #log-panel::-webkit-scrollbar { width: 5px; }
+    #log-panel::-webkit-scrollbar-track { background: transparent; }
+    #log-panel::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 2px; }
+    .log-stdout { color: var(--log-green); }
+    .log-stderr { color: var(--amber); }
+    .log-info   { color: #60a5fa; }
+    .log-muted  { color: var(--muted); }
+
+    .autoscroll-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); cursor: pointer; user-select: none; }
+    .autoscroll-toggle input { accent-color: var(--green); cursor: pointer; }
+
+    /* ── Git ── */
+    #git-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    #git-branch-info { display: flex; align-items: center; gap: 8px; }
+    .git-file-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; max-height: 200px; overflow-y: auto; }
+    .git-file-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--bg); border-radius: 6px; font-size: 12px; font-family: monospace; }
+    .git-status-badge { width: 20px; text-align: center; font-weight: 700; }
+    .git-status-M { color: var(--amber); }
+    .git-status-A { color: var(--green); }
+    .git-status-D { color: var(--red); }
+    .git-status-? { color: var(--muted); }
+    .git-status-R { color: var(--blue); }
+    .commit-list { display: flex; flex-direction: column; gap: 6px; }
+    .commit-item { padding: 8px 12px; background: var(--bg); border-radius: 8px; }
+    .commit-hash { font-size: 11px; color: var(--muted); font-family: monospace; }
+    .commit-msg  { font-size: 13px; color: var(--text); margin: 2px 0; }
+    .commit-meta { font-size: 11px; color: var(--muted); }
+
+    /* ── Misc ── */
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .divider { border: none; border-top: 1px solid var(--border); }
+    .text-muted { color: var(--muted); }
+    .text-sm { font-size: 12px; }
+
+    .remove-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; opacity: 0.6; }
+    .remove-btn:hover { color: var(--red); opacity: 1; }
+
+    /* ── Task overlay ── */
+    #task-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(13,17,23,0.75);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    #task-overlay.visible { display: flex; }
+    #task-modal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      width: 560px;
+      max-height: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    #task-modal-title { font-size: 15px; font-weight: 700; }
+    #task-log-panel {
+      flex: 1;
+      background: var(--log-bg);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-family: monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      min-height: 200px;
+      max-height: 300px;
+    }
+    #task-modal-footer { display: flex; justify-content: flex-end; }
+  </style>
+</head>
+<body>
+  <div id="app">
+
+    <!-- ── Sidebar ── -->
+    <aside id="sidebar">
+      <div id="sidebar-header">
+        <div id="logo">
+          <span class="icon">🌿</span>
+          <span>Terra<span class="brand">rium</span></span>
+        </div>
+        <input id="search-box" type="text" placeholder="Search projects…" autocomplete="off" />
+      </div>
+
+      <div id="project-list">
+        <!-- project cards injected here -->
+      </div>
+
+      <div id="sidebar-footer">
+        <button class="btn btn-ghost btn-full" id="add-project-btn">＋ Add Project</button>
+      </div>
+    </aside>
+
+    <!-- ── Main panel ── -->
+    <main id="main">
+
+      <!-- Empty state -->
+      <div id="empty-state">
+        <div class="big-icon">🌿</div>
+        <h2>No project selected</h2>
+        <p>Add a Python project folder to get started. Terrarium will detect your venv, entry points, and run configurations automatically.</p>
+        <button class="btn btn-green" id="empty-add-btn">＋ Add Project</button>
+      </div>
+
+      <!-- Project view -->
+      <div id="project-view" style="display:none;">
+
+        <!-- Tabs -->
+        <div id="tabs">
+          <button class="tab-btn active" data-tab="overview">Overview</button>
+          <button class="tab-btn" data-tab="logs">Logs</button>
+          <button class="tab-btn" data-tab="git">Git</button>
+        </div>
+
+        <!-- ── Overview tab ── -->
+        <div class="tab-panel active" id="tab-overview">
+
+          <!-- Project header -->
+          <div class="section-card">
+            <div id="proj-header">
+              <div style="flex:1; overflow:hidden;">
+                <div id="proj-name">Project</div>
+                <div id="proj-path" class="text-muted text-sm"></div>
+                <div id="proj-badges" style="margin-top:10px;"></div>
+              </div>
+              <div id="proj-actions">
+                <button class="btn btn-ghost btn-sm" id="btn-open-editor">VS Code</button>
+                <button class="btn btn-ghost btn-sm" id="btn-open-finder">Finder</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Venv status -->
+          <div class="section-card" id="venv-card">
+            <div class="section-title">Virtual Environment</div>
+            <div id="venv-info" class="row">
+              <span id="venv-status-text" class="text-muted text-sm">Checking…</span>
+            </div>
+          </div>
+
+          <!-- Run controls -->
+          <div class="section-card">
+            <div class="section-title">Run Configuration</div>
+            <div class="form-row" style="margin-bottom:14px;">
+              <div class="form-group">
+                <label class="form-label">Entry Point</label>
+                <select id="entry-select"></select>
+              </div>
+              <div class="form-group" style="max-width:200px;">
+                <label class="form-label">Custom entry</label>
+                <input type="text" id="custom-entry" placeholder="e.g. src/app.py" />
+              </div>
+              <div class="form-group" style="max-width:180px;">
+                <label class="form-label">Run Mode</label>
+                <select id="run-mode-select">
+                  <option value="auto">Auto-detect</option>
+                  <option value="script">Script (python)</option>
+                  <option value="flask">Flask</option>
+                  <option value="django">Django</option>
+                  <option value="streamlit">Streamlit</option>
+                  <option value="fastapi">FastAPI / Uvicorn</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="run-area">
+              <button class="btn btn-green" id="run-btn">▶ Run</button>
+              <div id="status-badge"><span id="status-dot" class="badge badge-muted">● Stopped</span></div>
+              <span id="uptime-display"></span>
+              <div id="port-badge" style="display:none;">
+                <span class="badge badge-blue" id="port-label"></span>
+                <button class="btn btn-ghost btn-sm" id="btn-open-browser">Open in Browser</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="section-card">
+            <div class="section-title">Actions</div>
+            <div class="row">
+              <button class="btn btn-ghost btn-sm" id="btn-pip-install">📦 pip install -r requirements.txt</button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ── Logs tab ── -->
+        <div class="tab-panel" id="tab-logs" style="display:none;">
+          <div id="log-toolbar">
+            <div id="log-toolbar-left">
+              <span class="text-muted text-sm">App output</span>
+              <label class="autoscroll-toggle">
+                <input type="checkbox" id="autoscroll-toggle" checked />
+                Auto-scroll
+              </label>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="btn-clear-logs">Clear</button>
+          </div>
+          <div id="log-panel"><span class="log-muted">No output yet. Run your app to see logs here.</span></div>
+        </div>
+
+        <!-- ── Git tab ── -->
+        <div class="tab-panel" id="tab-git" style="display:none;">
+          <div class="section-card">
+            <div id="git-header">
+              <div id="git-branch-info">
+                <span class="badge badge-blue" id="git-branch-badge">branch</span>
+                <span class="badge badge-muted" id="git-ahead-badge" style="display:none;"></span>
+                <span class="badge badge-muted" id="git-behind-badge" style="display:none;"></span>
+              </div>
+              <div class="row">
+                <button class="btn btn-ghost btn-sm" id="btn-git-pull">↓ Pull</button>
+                <button class="btn btn-ghost btn-sm" id="btn-git-refresh">↺ Refresh</button>
+              </div>
+            </div>
+
+            <div class="section-title">Changed Files</div>
+            <div id="git-file-list" class="git-file-list">
+              <span class="text-muted text-sm">Loading…</span>
+            </div>
+
+            <div class="section-title" style="margin-top:14px;">Commit &amp; Push</div>
+            <div class="row" style="gap:8px;">
+              <input type="text" id="commit-msg" placeholder="Commit message…" style="flex:1;" />
+              <button class="btn btn-green btn-sm" id="btn-commit-push">Commit &amp; Push</button>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <div class="section-title">Recent Commits</div>
+            <div id="commit-list" class="commit-list">
+              <span class="text-muted text-sm">Loading…</span>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /project-view -->
+
+    </main><!-- /main -->
+  </div><!-- /app -->
+
+  <!-- Task overlay -->
+  <div id="task-overlay">
+    <div id="task-modal">
+      <div id="task-modal-title">Running task…</div>
+      <div id="task-log-panel"></div>
+      <div id="task-modal-footer">
+        <button class="btn btn-ghost btn-sm" id="btn-task-close" disabled>Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

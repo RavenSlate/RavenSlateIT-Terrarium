@@ -1,0 +1,42 @@
+{
+  "name": "terrarium",
+  "version": "1.0.0",
+  "description": "Terrarium — by RavenSlate IT. Manage and run your Python apps without touching the terminal.",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder --mac",
+    "pack": "electron-builder --dir"
+  },
+  "build": {
+    "appId": "com.ravenslate.terrarium",
+    "productName": "Terrarium",
+    "copyright": "RavenSlate IT",
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "icon": "public/icon.png",
+      "target": ["dmg", "zip"]
+    },
+    "dmg": {
+      "title": "Terrarium by RavenSlate IT"
+    },
+    "files": [
+      "src/**/*",
+      "public/**/*",
+      "node_modules/**/*"
+    ]
+  },
+  "dependencies": {
+    "simple-git": "^3.22.0"
+  },
+  "devDependencies": {
+    "electron": "^29.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "optionalDependencies": {
+    "dmg-license": "^1.0.11"
+  },
+  "author": "RavenSlate IT",
+  "license": "MIT"
+}
