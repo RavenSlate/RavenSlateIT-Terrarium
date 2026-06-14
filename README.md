@@ -5,7 +5,7 @@ A native macOS app for managing and running your Python apps without touching th
 
 ## Install
 
-Download the latest `.dmg` from the [Releases page](#), open it, and drag Terrarium to your Applications folder.
+Download the latest `.dmg` from the [Releases page](https://github.com/RavenSlate/RavenSlateIT-Terrarium/releases), open it, and drag Terrarium to your Applications folder.
 
 **Requirements:**
 - macOS (Apple Silicon or Intel)
