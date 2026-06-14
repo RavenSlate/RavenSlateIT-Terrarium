@@ -62,7 +62,7 @@
       color: var(--text);
       margin-bottom: 6px;
     }
-    #logo .icon { font-size: 22px; }
+    #logo .icon { width: 28px; height: 28px; object-fit: contain; }
     #logo .brand { color: var(--green); }
 
     #logo-sub {
@@ -209,7 +209,6 @@
       gap: 16px;
       color: var(--muted);
     }
-    #empty-state .big-icon { font-size: 64px; opacity: 0.3; }
     #empty-state h2 { font-size: 20px; font-weight: 600; color: var(--text); }
     #empty-state p  { font-size: 13px; max-width: 340px; text-align: center; line-height: 1.7; }
 
@@ -452,7 +451,7 @@
     <aside id="sidebar">
       <div id="sidebar-header">
         <div id="logo">
-          <span class="icon">🌿</span>
+          <img class="icon" src="icon.png" alt="Terrarium" />
           <span>Terra<span class="brand">rium</span></span>
         </div>
         <div id="logo-sub">by RavenSlate IT</div>
@@ -473,7 +472,7 @@
 
       <!-- Empty state -->
       <div id="empty-state">
-        <div class="big-icon">🌿</div>
+        <img src="icon.png" alt="Terrarium" style="width:80px;height:80px;object-fit:contain;opacity:0.4;" />
         <h2>No project selected</h2>
         <p>Add a Python project folder to get started. Terrarium will detect your virtual environment, entry points, and run configurations automatically.</p>
         <button class="btn btn-green" id="empty-add-btn">＋ Add Project</button>
