@@ -10,7 +10,7 @@ const { spawn, execSync } = require('child_process')
 const fs   = require('fs')
 const path = require('path')
 
-// ── Augment PATH so common tools are always reachable ──────────────────────
+// ── Augment PATH so common tools are always reachable ──────────────────
 const extraPaths = ['/usr/local/bin', '/opt/homebrew/bin', '/usr/bin', '/bin']
 process.env.PATH = extraPaths.join(':') + (process.env.PATH ? ':' + process.env.PATH : '')
 
@@ -53,14 +53,14 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
 
-// ── Helper: send to renderer ───────────────────────────────────────────────
+// ── Helper: send to renderer ──────────────────────────────────────────────────
 function send(channel, payload) {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send(channel, payload)
   }
 }
 
-// ── Helper: build a merged env that prepends venv/bin ─────────────────────
+// ── Helper: build a merged env that prepends venv/bin ───────────────────────────
 function buildEnv(venvPath) {
   const env = { ...process.env }
   if (venvPath) {
@@ -214,16 +214,12 @@ ipcMain.handle('start-app', async (event, { projectPath, entryPoint, runMode, ve
 
   runningProcesses[projectPath] = child
 
-  // Port detection regex — covers :8000, localhost:5000, 127.0.0.1:8501, etc.
   const portRegex = /(?:localhost|127\.0\.0\.1|0\.0\.0\.0)?:(\d{4,5})(?:[/\s"']|$)/
-
   const portSent = { sent: false }
 
   const handleOutput = (type) => (data) => {
     const text = data.toString()
     send('app-log', { projectPath, type, text })
-
-    // Only send the first port we detect
     if (!portSent.sent) {
       const m = text.match(portRegex)
       if (m) {
@@ -259,7 +255,6 @@ ipcMain.handle('stop-app', async (event, { projectPath }) => {
 
   try { child.kill('SIGTERM') } catch (_) {}
 
-  // Force-kill after 3 s if still alive
   const forceTimer = setTimeout(() => {
     try { child.kill('SIGKILL') } catch (_) {}
   }, 3000)
@@ -277,6 +272,37 @@ ipcMain.handle('pip-install', async (event, { projectPath, venvPath }) => {
     const pipBin = venvPath ? path.join(venvPath, 'bin', 'pip') : 'pip3'
 
     const child = spawn(pipBin, ['install', '-r', 'requirements.txt'], {
+      cwd: projectPath,
+      env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+
+    child.stdout.on('data', d => send('task-log', { type: 'stdout', text: d.toString() }))
+    child.stderr.on('data', d => send('task-log', { type: 'stderr', text: d.toString() }))
+
+    child.on('close', (code) => {
+      const success = code === 0
+      send('task-done', { success, error: success ? null : `pip exited with code ${code}` })
+      resolve({ success })
+    })
+
+    child.on('error', (err) => {
+      send('task-done', { success: false, error: err.message })
+      resolve({ success: false, error: err.message })
+    })
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IPC: pip-manual
+// ─────────────────────────────────────────────────────────────────────────────
+ipcMain.handle('pip-manual', async (event, { projectPath, venvPath, packages }) => {
+  return new Promise((resolve) => {
+    const env    = buildEnv(venvPath)
+    const pipBin = venvPath ? path.join(venvPath, 'bin', 'pip') : 'pip3'
+    const pkgList = packages.trim().split(/\s+/)
+
+    const child = spawn(pipBin, ['install', ...pkgList], {
       cwd: projectPath,
       env,
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -337,7 +363,6 @@ ipcMain.handle('open-editor', async (event, { projectPath }) => {
       return { success: true, editor }
     } catch (_) { /* not found, try next */ }
   }
-  // Fall back to Finder/Files
   await shell.openPath(projectPath)
   return { success: true, editor: 'system' }
 })
