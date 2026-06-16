@@ -63,6 +63,8 @@ const portBadge      = $('port-badge')
 const portLabel      = $('port-label')
 
 const logPanel       = $('log-panel')
+const stdinInput     = $('stdin-input')
+const btnStdinSend   = $('btn-stdin-send')
 const taskOverlay    = $('task-overlay')
 const taskModalTitle = $('task-modal-title')
 const taskLogPanel   = $('task-log-panel')
@@ -236,6 +238,9 @@ function renderRunState(p) {
     uptimeDisplay.textContent = ''
   }
 
+  stdinInput.disabled = !isRunning
+  btnStdinSend.disabled = !isRunning
+
   // pip install button + manual row
   if (p.hasRequirements) {
     $('btn-pip-install').disabled = false
@@ -325,6 +330,15 @@ async function startApp(p) {
 
 async function stopApp(p) {
   await window.terrarium.stopApp({ projectPath: p.path })
+}
+
+async function sendStdin(p) {
+  const text = stdinInput.value
+  if (!text || !runningApps[p.id]) return
+  appendLog('info', `> ${text}\n`)
+  stdinInput.value = ''
+  const res = await window.terrarium.sendStdin({ projectPath: p.path, text })
+  if (!res.success) appendLog('stderr', `Failed to send input: ${res.error}\n`)
 }
 
 function detectRunMode(entryPoint) {
@@ -611,6 +625,18 @@ function wireEvents() {
       chip.classList.add('installing')
       runPipManual(p, chip.dataset.pkg).finally(() => chip.classList.remove('installing'))
     })
+  })
+
+  btnStdinSend.onclick = () => {
+    const p = getProject(activeProjectId)
+    if (p) sendStdin(p)
+  }
+
+  stdinInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const p = getProject(activeProjectId)
+      if (p) sendStdin(p)
+    }
   })
 
   $('btn-clear-logs').onclick = clearLogs
