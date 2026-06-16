@@ -206,7 +206,7 @@ ipcMain.handle('start-app', async (event, { projectPath, entryPoint, runMode, ve
     child = spawn(cmd, args, {
       cwd:   projectPath,
       env,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: ['pipe', 'pipe', 'pipe'],
     })
   } catch (err) {
     return { success: false, error: err.message }
@@ -244,6 +244,22 @@ ipcMain.handle('start-app', async (event, { projectPath, entryPoint, runMode, ve
   })
 
   return { success: true, pid: child.pid }
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IPC: send-stdin
+// ─────────────────────────────────────────────────────────────────────────────
+ipcMain.handle('send-stdin', async (event, { projectPath, text }) => {
+  const child = runningProcesses[projectPath]
+  if (!child || !child.stdin || !child.stdin.writable) {
+    return { success: false, error: 'No running process to send input to' }
+  }
+  try {
+    child.stdin.write(text.endsWith('\n') ? text : text + '\n')
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
