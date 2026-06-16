@@ -236,8 +236,16 @@ function renderRunState(p) {
     uptimeDisplay.textContent = ''
   }
 
-  // pip install button
-  $('btn-pip-install').disabled = !p.hasRequirements
+  // pip install button + manual row
+  if (p.hasRequirements) {
+    $('btn-pip-install').disabled = false
+    $('pip-req-status').textContent = ''
+    $('pip-manual-row').style.display = 'none'
+  } else {
+    $('btn-pip-install').disabled = true
+    $('pip-req-status').textContent = 'No requirements.txt detected'
+    $('pip-manual-row').style.display = 'block'
+  }
 }
 
 // ── Add project ────────────────────────────────────────────────────────────
@@ -368,6 +376,25 @@ function appendTaskLog(type, text) {
 
 function closeTaskOverlay() {
   taskOverlay.classList.remove('visible')
+}
+
+async function runPipManual(p, packages) {
+  if (!packages || !packages.trim()) return
+  showTaskOverlay(`pip install ${packages}`)
+  window.terrarium.removeAllListeners('task-log')
+  window.terrarium.removeAllListeners('task-done')
+
+  window.terrarium.onTaskLog(({ type, text }) => appendTaskLog(type, text))
+  window.terrarium.onTaskDone(({ success, error }) => {
+    if (success) {
+      appendTaskLog('info', '\n✓ Installation complete.\n')
+    } else {
+      appendTaskLog('stderr', `\n✗ Error: ${error}\n`)
+    }
+    btnTaskClose.disabled = false
+  })
+
+  await window.terrarium.pipManual({ projectPath: p.path, venvPath: p.venvPath || null, packages })
 }
 
 async function runPipInstall(p) {
@@ -559,6 +586,32 @@ function wireEvents() {
     const p = getProject(activeProjectId)
     if (p) runPipInstall(p)
   }
+
+  $('btn-pip-manual').onclick = () => {
+    const p = getProject(activeProjectId)
+    if (!p) return
+    const pkgs = $('pip-manual-input').value.trim()
+    if (pkgs) runPipManual(p, pkgs)
+  }
+
+  $('pip-manual-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const p = getProject(activeProjectId)
+      if (!p) return
+      const pkgs = $('pip-manual-input').value.trim()
+      if (pkgs) runPipManual(p, pkgs)
+    }
+  })
+
+  document.querySelectorAll('.module-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const p = getProject(activeProjectId)
+      if (!p) return
+      if (chip.classList.contains('installing')) return
+      chip.classList.add('installing')
+      runPipManual(p, chip.dataset.pkg).finally(() => chip.classList.remove('installing'))
+    })
+  })
 
   $('btn-clear-logs').onclick = clearLogs
 
