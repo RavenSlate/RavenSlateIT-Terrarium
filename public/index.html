@@ -365,6 +365,10 @@
             <button class="btn btn-ghost btn-sm" id="btn-clear-logs">Clear</button>
           </div>
           <div id="log-panel"><span class="log-muted">No output yet. Run your app to see logs here.</span></div>
+          <div id="stdin-row" class="row" style="gap:8px; margin-top:10px; flex-shrink:0;">
+            <input type="text" id="stdin-input" placeholder="Type input for the running app and press Enter…" style="flex:1;" disabled />
+            <button class="btn btn-ghost btn-sm" id="btn-stdin-send" disabled>↵ Send</button>
+          </div>
         </div>
 
         <!-- Git -->
