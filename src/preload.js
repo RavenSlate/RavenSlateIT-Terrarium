@@ -16,8 +16,9 @@ contextBridge.exposeInMainWorld('terrarium', {
   pickFolder: () => ipcRenderer.invoke('pick-folder'),
 
   // ── Process lifecycle ─────────────────────────────────────────────────────────
-  startApp: (opts) => ipcRenderer.invoke('start-app', opts),
-  stopApp:  (opts) => ipcRenderer.invoke('stop-app',  opts),
+  startApp:  (opts) => ipcRenderer.invoke('start-app',  opts),
+  stopApp:   (opts) => ipcRenderer.invoke('stop-app',   opts),
+  sendStdin: (opts) => ipcRenderer.invoke('send-stdin', opts),
 
   // ── pip / venv ────────────────────────────────────────────────────────────────
   pipInstall:    (opts) => ipcRenderer.invoke('pip-install',     opts),
